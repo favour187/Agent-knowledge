@@ -1,10 +1,3 @@
-FROM node:20-alpine AS frontend-build
-WORKDIR /build
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
 FROM python:3.11-slim
 WORKDIR /app
 
@@ -22,9 +15,8 @@ COPY core/ ./core/
 COPY database/ ./database/
 COPY api/ ./api/
 COPY tools/ ./tools/
+COPY frontend/dist/ ./frontend/dist/
 RUN uv pip install --system -e .
-
-COPY --from=frontend-build /build/dist ./frontend/dist
 
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
