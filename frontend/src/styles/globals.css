@@ -1,6 +1,6 @@
 /* ================================================================
    Arena Agent Mode — Exact replica of arena.ai/agent
-   Dark minimal, workspace panel, tool pills, feedback buttons
+   Works on ALL screen sizes — mobile and desktop
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -15,7 +15,8 @@
   --border-subtle: #1e1e1e;
   --text: #ededed;
   --text-secondary: #a0a0a0;
-  --text-muted: #666;
+  --text-muted: #666666;
+  --text-faint: #444444;
   --accent: #3b82f6;
   --accent-hover: #2563eb;
   --green: #22c55e;
@@ -30,7 +31,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; }
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -59,11 +60,13 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   flex-shrink: 0;
+  width: 100%;
 }
 .topnav-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
 }
 .topnav-logo {
   display: flex;
@@ -72,6 +75,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   font-weight: 600;
   font-size: 15px;
   color: var(--text);
+  white-space: nowrap;
 }
 .topnav-mode {
   display: flex;
@@ -85,6 +89,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
+  white-space: nowrap;
 }
 .topnav-links {
   display: flex;
@@ -99,6 +104,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   transition: all 0.15s;
   border: none;
   background: transparent;
+  white-space: nowrap;
 }
 .topnav-link:hover { color: var(--text-secondary); background: var(--bg-elevated); }
 .topnav-link.active { color: var(--text); background: var(--bg-elevated); }
@@ -106,13 +112,29 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
+.topnav-ws-toggle {
+  display: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  align-items: center;
+  gap: 4px;
+}
+.topnav-ws-toggle:hover { color: var(--text); }
 
 /* ─── App Shell ──────────────────────────────────────────────── */
 .app-shell {
   display: flex;
-  height: 100vh;
   flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* ─── Main Content ───────────────────────────────────────────── */
@@ -120,6 +142,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   flex: 1;
   display: flex;
   overflow: hidden;
+  width: 100%;
 }
 
 /* ─── Chat Area ──────────────────────────────────────────────── */
@@ -128,16 +151,19 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 .chat-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 24px 0;
+  -webkit-overflow-scrolling: touch;
 }
 .chat-inner {
   max-width: 768px;
   margin: 0 auto;
   padding: 0 20px;
+  width: 100%;
 }
 
 /* ─── Messages ───────────────────────────────────────────────── */
@@ -146,6 +172,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   gap: 12px;
   padding: 16px 0;
   animation: msg-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
 }
 @keyframes msg-in { from { opacity: 0; transform: translateY(6px); } }
 
@@ -161,7 +188,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
 }
 .msg-avatar.user { background: var(--bg-elevated); color: var(--text-muted); }
 .msg-avatar.agent { background: var(--accent); color: white; }
-.msg-body { flex: 1; min-width: 0; }
+.msg-body { flex: 1; min-width: 0; overflow: hidden; }
 .msg-role {
   font-size: 12px;
   font-weight: 600;
@@ -172,6 +199,8 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   font-size: 14px;
   line-height: 1.7;
   color: var(--text);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .msg-text p { margin-bottom: 8px; }
 .msg-text p:last-child { margin-bottom: 0; }
@@ -182,6 +211,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   border-radius: 4px;
   font-size: 13px;
   font-family: var(--font-mono);
+  word-break: break-all;
 }
 .msg-text pre {
   background: var(--bg-surface);
@@ -190,10 +220,11 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   padding: 14px;
   margin: 10px 0;
   overflow-x: auto;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
+  max-width: 100%;
 }
-.msg-text pre code { background: transparent; padding: 0; }
+.msg-text pre code { background: transparent; padding: 0; font-size: 12px; }
 .msg-text ul, .msg-text ol { padding-left: 20px; margin: 8px 0; }
 .msg-text li { margin-bottom: 4px; }
 .msg-text img { max-width: 100%; border-radius: var(--radius); margin: 8px 0; }
@@ -262,6 +293,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   padding: 10px 0;
   border-top: 1px solid var(--border-subtle);
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 .feedback-label {
   font-size: 12px;
@@ -293,6 +325,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
 .input-area {
   padding: 12px 20px 20px;
   flex-shrink: 0;
+  width: 100%;
 }
 .input-wrapper {
   max-width: 768px;
@@ -302,6 +335,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   border-radius: var(--radius-xl);
   overflow: hidden;
   transition: border-color 0.15s;
+  width: 100%;
 }
 .input-wrapper:focus-within {
   border-color: var(--accent);
@@ -323,6 +357,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   min-height: 24px;
   max-height: 200px;
   line-height: 1.5;
+  width: 100%;
 }
 .input-field::placeholder { color: var(--text-muted); }
 .input-field:disabled { opacity: 0.5; }
@@ -348,6 +383,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   gap: 4px;
   padding: 8px 12px;
   border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
 }
 .input-action {
   display: flex;
@@ -364,7 +400,6 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
 }
 .input-action:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .input-disclaimer {
-  margin-left: auto;
   font-size: 10px;
   color: var(--text-faint);
 }
@@ -376,38 +411,39 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding: 48px 20px;
+  padding: 32px 16px;
   text-align: center;
 }
 .welcome h1 {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 8px;
   letter-spacing: -0.02em;
 }
 .welcome-sub {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-muted);
-  margin-bottom: 36px;
+  margin-bottom: 28px;
+  max-width: 400px;
 }
 .welcome-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  max-width: 600px;
+  max-width: 500px;
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .welcome-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 14px;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -420,21 +456,50 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .welcome-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-faint);
+}
+.welcome-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 12px;
+}
+.welcome-github:hover { border-color: var(--accent); color: var(--text); }
+.welcome-new-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 /* ─── Workspace Panel ────────────────────────────────────────── */
 .workspace {
-  width: 320px;
+  width: 300px;
+  min-width: 260px;
+  max-width: 400px;
   background: var(--bg-surface);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .ws-header {
   display: flex;
@@ -442,6 +507,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   justify-content: space-between;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .ws-title {
   font-size: 13px;
@@ -464,6 +530,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   gap: 2px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .ws-tab {
   padding: 5px 12px;
@@ -481,6 +548,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+  -webkit-overflow-scrolling: touch;
 }
 .ws-file {
   display: flex;
@@ -517,7 +585,7 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px;
-  font-size: 12px;
+  font-size: 11px;
   font-family: var(--font-mono);
   white-space: pre-wrap;
   word-break: break-all;
@@ -528,17 +596,70 @@ button, input, textarea, select { font-family: inherit; color: inherit; }
 }
 .ws-preview-iframe {
   width: 100%;
-  height: 400px;
+  height: 350px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: white;
 }
 
-/* ─── Responsive ─────────────────────────────────────────────── */
+/* ─── Mobile Overlay Workspace ───────────────────────────────── */
+.workspace-overlay {
+  display: none;
+}
+
+/* ─── Responsive — workspace stays visible on all sizes ──────── */
 @media (max-width: 768px) {
-  .workspace { display: none; }
-  .topnav-links { display: none; }
-  .chat-inner { padding: 0 12px; }
-  .input-area { padding: 8px 12px 16px; }
-  .welcome-grid { grid-template-columns: 1fr; }
+  .topnav-ws-toggle {
+    display: flex;
+  }
+  .topnav-links {
+    display: none;
+  }
+
+  /* Workspace becomes a full-screen overlay on mobile */
+  .workspace {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    z-index: 50;
+    border-left: none;
+  }
+
+  .chat-inner {
+    padding: 0 12px;
+  }
+  .input-area {
+    padding: 8px 12px 16px;
+  }
+  .welcome-grid {
+    grid-template-columns: 1fr;
+  }
+  .welcome h1 {
+    font-size: 22px;
+  }
+  .msg {
+    gap: 8px;
+  }
+  .msg-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .feedback-bar {
+    gap: 6px;
+  }
+  .feedback-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 769px) {
+  .topnav-ws-toggle {
+    display: none;
+  }
 }

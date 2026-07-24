@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import {
   Bot, User, X, Search, Code2, Terminal, Wrench, FileText,
   FolderOpen, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown,
-  RotateCcw, Paperclip, Send,
+  RotateCcw, Paperclip, Send, PanelRightOpen, Github,
 } from 'lucide-react'
 import { agentApi } from '../api/agent'
 import { workspaceApi } from '../api/workspace'
@@ -14,7 +14,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [showWorkspace, setShowWorkspace] = useState(false)
+  const [showWorkspace, setShowWorkspace] = useState(true)
   const [selectedFile, setSelectedFile] = useState(null)
   const [fileContent, setFileContent] = useState('')
   const [filePreviewType, setFilePreviewType] = useState('text')
@@ -25,11 +25,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     const handler = () => {
-      setMessages([]); setShowWorkspace(false); setSelectedFile(null)
-      setFileContent(''); setFeedback({})
+      setMessages([]); setSelectedFile(null); setFileContent(''); setFeedback({})
     }
+    const wsHandler = () => setShowWorkspace((v) => !v)
     window.addEventListener('arena-new-chat', handler)
-    return () => window.removeEventListener('arena-new-chat', handler)
+    window.addEventListener('arena-toggle-ws', wsHandler)
+    return () => {
+      window.removeEventListener('arena-new-chat', handler)
+      window.removeEventListener('arena-toggle-ws', wsHandler)
+    }
   }, [])
 
   const scrollToBottom = useCallback(() => {
@@ -72,7 +76,7 @@ export default function ChatPage() {
 
   function handleFeedback(msgId, value) {
     setFeedback((prev) => ({ ...prev, [msgId]: value }))
-    toast.success(value === 'yes' ? 'Thanks for the feedback!' : value === 'keep' ? 'Continuing…' : 'Feedback recorded')
+    toast.success(value === 'yes' ? 'Thanks!' : value === 'keep' ? 'Continuing…' : 'Recorded')
   }
 
   async function openFile(path) {
@@ -81,12 +85,7 @@ export default function ChatPage() {
       setSelectedFile(path)
       setFileContent(data.content)
       setWsTab('preview')
-      // Detect if it's HTML for iframe preview
-      if (path.endsWith('.html') || path.endsWith('.htm')) {
-        setFilePreviewType('html')
-      } else {
-        setFilePreviewType('text')
-      }
+      setFilePreviewType(path.endsWith('.html') || path.endsWith('.htm') ? 'html' : 'text')
     } catch { toast.error('Could not read file') }
   }
 
@@ -99,7 +98,7 @@ export default function ChatPage() {
         <div className="chat-scroll" ref={scrollRef}>
           <div className="chat-inner">
             {!hasMessages && !isStreaming ? (
-              <WelcomeScreen onSuggestion={handleSuggestion} />
+              <WelcomeScreen onSuggestion={handleSuggestion} onToggleWs={() => setShowWorkspace(!showWorkspace)} />
             ) : (
               <>
                 {messages.map((msg) => (
@@ -123,8 +122,6 @@ export default function ChatPage() {
                         <div className="msg-text"><RenderContent content={msg.content} /></div>
                       </div>
                     </div>
-
-                    {/* Feedback bar after last agent message */}
                     {msg.role === 'agent' && msg.id === lastAgentMsg?.id && !feedback[msg.id] && !isStreaming && (
                       <div className="feedback-bar">
                         <span className="feedback-label">Was this task successful?</span>
@@ -159,7 +156,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Input bar */}
         <div className="input-area">
           <form className="input-wrapper" onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
             <div className="input-top">
@@ -182,6 +178,9 @@ export default function ChatPage() {
               </button>
             </div>
             <div className="input-bottom">
+              <button type="button" className="input-action" onClick={() => setShowWorkspace(!showWorkspace)}>
+                <PanelRightOpen size={13} /> Files
+              </button>
               <span className="input-disclaimer">
                 Inputs are processed by AI and responses may be inaccurate.
               </span>
@@ -190,7 +189,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Workspace panel */}
+      {/* Workspace panel — always rendered, hidden via CSS on mobile if needed */}
       {showWorkspace && (
         <div className="workspace">
           <div className="ws-header">
@@ -209,12 +208,7 @@ export default function ChatPage() {
                 <div className="ws-preview">
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>{selectedFile}</div>
                   {filePreviewType === 'html' ? (
-                    <iframe
-                      className="ws-preview-iframe"
-                      srcDoc={fileContent}
-                      title="Preview"
-                      sandbox="allow-scripts"
-                    />
+                    <iframe className="ws-preview-iframe" srcDoc={fileContent} title="Preview" sandbox="allow-scripts" />
                   ) : (
                     <pre className="ws-preview-content">{fileContent}</pre>
                   )}
@@ -286,9 +280,9 @@ function ToolIcon({ name }) {
   return <span className="tool-pill-icon"><Icon size={11} /></span>
 }
 
-/* ── Welcome Screen — exact Arena.ai ─────────────────────────── */
+/* ── Welcome Screen ──────────────────────────────────────────── */
 
-function WelcomeScreen({ onSuggestion }) {
+function WelcomeScreen({ onSuggestion, onToggleWs }) {
   const suggestions = [
     { title: 'Create a landing page', desc: 'Create a sleek, modern landing page' },
     { title: 'Build a dashboard', desc: 'Turn data into interactive charts' },
@@ -313,9 +307,14 @@ function WelcomeScreen({ onSuggestion }) {
         ))}
       </div>
       <div className="welcome-footer">
-        <Paperclip size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-        Drop files… Add files
+        <Paperclip size={12} /> Drop files… Add files
       </div>
+      <button className="welcome-github">
+        <Github size={14} /> Connect your GitHub <span className="welcome-new-badge">NEW</span>
+      </button>
+      <button className="input-action" onClick={onToggleWs} style={{ marginTop: 16 }}>
+        <PanelRightOpen size={14} /> Toggle Workspace
+      </button>
     </div>
   )
 }
