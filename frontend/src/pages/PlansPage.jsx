@@ -23,7 +23,7 @@ export default function PlansPage() {
   })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Plans</h1>

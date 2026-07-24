@@ -1,117 +1,115 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Bot, MessageSquare, Zap, Wrench, Code2, ArrowRight } from 'lucide-react'
 import { agentsApi } from '../api/agents'
-import { tasksApi } from '../api/tasks'
-import { plansApi } from '../api/plans'
-import { auditApi } from '../api/audit'
-import { SkeletonCards, SkeletonTable, EmptyState } from '../components/ui/Primitives'
-import { formatDistanceToNow } from 'date-fns'
-import { Bot, ListChecks, Workflow, ScrollText, Activity } from 'lucide-react'
-
-function useCount(key, fn) {
-  return useQuery({ queryKey: [key], queryFn: fn, staleTime: 15_000 })
-}
+import { sessionsApi } from '../api/sessions'
 
 export default function DashboardPage() {
-  const agents = useCount('agents', agentsApi.list)
-  const tasks = useCount('tasks', tasksApi.list)
-  const plans = useCount('plans', plansApi.list)
-  const audit = useQuery({ queryKey: ['audit', 'recent'], queryFn: auditApi.list, staleTime: 15_000 })
+  const navigate = useNavigate()
 
-  const activeAgents = (agents.data || []).filter((a) => a.status === 'running' || a.status === 'active').length
-  const openTasks = (tasks.data || []).filter((t) => t.status !== 'completed' && t.status !== 'failed').length
-  const activePlans = (plans.data || []).filter((p) => p.status !== 'completed').length
-  const isLoading = agents.isLoading || tasks.isLoading || plans.isLoading || audit.isLoading
+  const { data: agents } = useQuery({
+    queryKey: ['agents'],
+    queryFn: agentsApi.list,
+    staleTime: 15_000,
+  })
+
+  const quickActions = [
+    {
+      title: 'Start chatting',
+      desc: 'Talk to an agent about anything',
+      icon: MessageSquare,
+      action: () => navigate('/sessions'),
+    },
+    {
+      title: 'Create an agent',
+      desc: 'Configure a new AI agent',
+      icon: Bot,
+      action: () => navigate('/agents'),
+    },
+    {
+      title: 'Train a model',
+      desc: 'Fine-tune adapters on your data',
+      icon: Zap,
+      action: () => navigate('/training'),
+    },
+    {
+      title: 'Open workspace',
+      desc: 'Code editor, file browser, sandbox',
+      icon: Code2,
+      action: () => navigate('/workspace'),
+    },
+  ]
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Overview</h1>
-          <p className="page-subtitle">
-            Live state of your agents, tasks, and plans across the platform.
-          </p>
+    <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="chat-welcome">
+        <div className="chat-welcome-icon">
+          <Bot size={32} color="white" />
         </div>
-      </div>
+        <h2>Welcome to Arena</h2>
+        <p>
+          Your autonomous AI agent platform. Chat with agents, manage tasks,
+          train models, and execute tools — all in one place.
+        </p>
 
-      {isLoading ? (
-        <SkeletonCards count={4} />
-      ) : (
-        <div className="grid-cards" style={{ marginBottom: 28 }}>
-          <StatCard
-            label="Agents"
-            value={agents.data?.length ?? 0}
-            sub={`${activeAgents} active`}
-            to="/agents"
-            icon={Bot}
-            color="amber"
-          />
-          <StatCard
-            label="Open tasks"
-            value={openTasks}
-            sub={`${tasks.data?.length ?? 0} total`}
-            to="/tasks"
-            icon={ListChecks}
-            color="teal"
-          />
-          <StatCard
-            label="Active plans"
-            value={activePlans}
-            sub={`${plans.data?.length ?? 0} total`}
-            to="/plans"
-            icon={Workflow}
-            color="violet"
-          />
-          <StatCard
-            label="Audit events"
-            value={audit.data?.length ?? 0}
-            sub="recorded"
-            to="/audit"
-            icon={ScrollText}
-            color="amber"
-          />
-        </div>
-      )}
-
-      <div className="card">
-        <div className="flex-between" style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Activity size={15} style={{ color: 'var(--amber)' }} />
-            Recent activity
-          </h3>
-          {audit.data && audit.data.length > 0 && (
-            <Link to="/audit" style={{ fontSize: 12, color: 'var(--amber)', textDecoration: 'none' }}>
-              View all →
-            </Link>
-          )}
-        </div>
-
-        {audit.isLoading && <SkeletonTable rows={5} cols={3} />}
-
-        {audit.data && audit.data.length === 0 && (
-          <EmptyState
-            title="No activity yet"
-            hint="Actions across the platform will show up here."
-            icon={Activity}
-          />
-        )}
-
-        {audit.data && audit.data.length > 0 && (
-          <div>
-            {audit.data.slice(0, 8).map((log, i) => (
+        <div className="chat-welcome-suggestions">
+          {quickActions.map((action) => {
+            const Icon = action.icon
+            return (
               <div
-                key={log.id}
-                className="activity-item"
-                style={{ animationDelay: `${i * 0.04}s` }}
+                key={action.title}
+                className="chat-welcome-suggestion"
+                onClick={action.action}
               >
-                <div className="activity-dot" />
-                <div className="activity-content">
-                  <div className="activity-action">
-                    <span className="mono" style={{ color: 'var(--amber)' }}>{log.action}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <Icon size={16} style={{ color: 'var(--accent-blue)' }} />
+                  <h4>{action.title}</h4>
+                </div>
+                <p>{action.desc}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        {agents && agents.length > 0 && (
+          <div style={{ marginTop: 32, width: '100%', maxWidth: 500 }}>
+            <h3 style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, textAlign: 'left' }}>
+              Your agents
+            </h3>
+            {agents.map((agent) => (
+              <div
+                key={agent.id}
+                className="card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  marginBottom: 8,
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate('/sessions')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 'var(--radius-md)',
+                    background: 'var(--accent-blue-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Bot size={16} style={{ color: 'var(--accent-blue)' }} />
                   </div>
-                  <div className="activity-meta">
-                    {log.resource_type || 'System'} · {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{agent.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{agent.model}</div>
                   </div>
+                </div>
+                <div className={`badge status-${agent.status || 'idle'}`}>
+                  <span className="badge-dot" />
+                  {agent.status || 'idle'}
                 </div>
               </div>
             ))}
@@ -119,40 +117,5 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
-  )
-}
-
-const colorMap = {
-  amber: { bg: 'var(--amber-glow)', color: 'var(--amber)' },
-  teal: { bg: 'var(--teal-glow)', color: 'var(--teal)' },
-  violet: { bg: 'var(--violet-glow)', color: 'var(--violet)' },
-}
-
-function StatCard({ label, value, sub, to, icon: Icon, color = 'amber' }) {
-  const c = colorMap[color] || colorMap.amber
-  return (
-    <Link to={to} className="stat-card">
-      <div className="flex-between">
-        <div className="stat-label">{label}</div>
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 'var(--radius-md)',
-            background: c.bg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: c.color,
-          }}
-        >
-          <Icon size={16} />
-        </div>
-      </div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-trend stat-trend-neutral" style={{ marginTop: 8 }}>
-        {sub}
-      </div>
-    </Link>
   )
 }

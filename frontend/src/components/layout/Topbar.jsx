@@ -1,23 +1,23 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, Search } from 'lucide-react'
+import { Search, LogOut, Plus } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
-const routeLabels = {
-  '/': 'Overview',
-  '/agents': 'Agents',
-  '/sessions': 'Sessions',
-  '/tasks': 'Tasks',
-  '/plans': 'Plans',
-  '/memory': 'Memory',
-  '/knowledge': 'Knowledge',
-  '/patterns': 'Patterns',
-  '/tools': 'Tools',
-  '/workspace': 'Workspace',
-  '/training': 'Training',
-  '/evaluation': 'Evaluation',
-  '/feedback': 'Feedback',
-  '/audit': 'Audit log',
-  '/api-keys': 'API keys',
+const routeMeta = {
+  '/': { title: 'Overview', subtitle: 'Arena AI Platform' },
+  '/sessions': { title: 'Chat', subtitle: 'Conversation with agents' },
+  '/agents': { title: 'Agents', subtitle: 'Manage your AI agents' },
+  '/tasks': { title: 'Tasks', subtitle: 'Work queue' },
+  '/plans': { title: 'Plans', subtitle: 'Goal decompositions' },
+  '/memory': { title: 'Memory', subtitle: 'Agent memory store' },
+  '/knowledge': { title: 'Knowledge', subtitle: 'Entity graph' },
+  '/patterns': { title: 'Patterns', subtitle: 'Learned patterns' },
+  '/tools': { title: 'Tools', subtitle: 'Tool registry' },
+  '/workspace': { title: 'Workspace', subtitle: 'Sandbox & code editor' },
+  '/training': { title: 'Training', subtitle: 'Fine-tune adapters' },
+  '/evaluation': { title: 'Evaluation', subtitle: 'Self-evaluation' },
+  '/feedback': { title: 'Feedback', subtitle: 'Human feedback' },
+  '/audit': { title: 'Audit', subtitle: 'Action history' },
+  '/api-keys': { title: 'API Keys', subtitle: 'Programmatic access' },
 }
 
 export default function Topbar({ onOpenCmd }) {
@@ -26,31 +26,29 @@ export default function Topbar({ onOpenCmd }) {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const meta = routeMeta[location.pathname] || { title: 'Arena', subtitle: '' }
+
   function handleLogout() {
     logout()
     navigate('/login')
   }
 
-  const currentLabel = routeLabels[location.pathname] || 'Arena'
-
   return (
     <div className="topbar">
       <div className="topbar-left">
-        <div className="topbar-breadcrumb">
-          <span style={{ color: 'var(--text-muted)' }}>arena</span>
-          <span className="topbar-breadcrumb-sep">/</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{currentLabel}</span>
+        <div>
+          <div className="topbar-title">{meta.title}</div>
         </div>
       </div>
 
       <div className="topbar-right">
-        <button className="topbar-cmd-trigger" onClick={onOpenCmd}>
+        <button className="topbar-search" onClick={onOpenCmd}>
           <Search size={14} />
-          <span>Search commands…</span>
-          <span className="sidebar-kbd" style={{ marginLeft: 'auto' }}>⌘K</span>
+          <span>Search or jump to…</span>
+          <kbd>⌘K</kbd>
         </button>
 
-        <button className="btn btn-ghost btn-sm" onClick={handleLogout} title="Sign out">
+        <button className="topbar-btn" onClick={handleLogout}>
           <LogOut size={14} />
         </button>
       </div>

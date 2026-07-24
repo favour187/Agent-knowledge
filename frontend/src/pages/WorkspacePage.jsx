@@ -205,7 +205,7 @@ export default function WorkspacePage() {
   const handleClearConsole = useCallback(() => setConsoleOutput([]), [])
 
   return (
-    <div className="page" style={{ maxWidth: '100%', padding: 0 }}>
+    <div className="page-container" style={{ maxWidth: '100%', padding: 0 }}>
       {/* Workspace Toolbar */}
       <div className="ws-toolbar">
         <div className="ws-toolbar-left">

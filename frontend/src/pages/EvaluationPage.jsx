@@ -11,7 +11,7 @@ export default function EvaluationPage() {
   const { data: evals, isLoading, error } = useQuery({ queryKey: ['evaluation'], queryFn: evaluationApi.list })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Evaluation</h1>

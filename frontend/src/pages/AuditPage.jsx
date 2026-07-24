@@ -8,7 +8,7 @@ export default function AuditPage() {
   const { data: logs, isLoading, error } = useQuery({ queryKey: ['audit'], queryFn: auditApi.list })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Audit log</h1>

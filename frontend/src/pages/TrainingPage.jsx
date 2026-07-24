@@ -32,7 +32,7 @@ export default function TrainingPage() {
   const [tab, setTab] = useState('train')
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Model Training</h1>

@@ -1,103 +1,110 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Send, MessagesSquare } from 'lucide-react'
+import { Plus, Send, Bot, User, Square, Paperclip, Terminal } from 'lucide-react'
 import { sessionsApi } from '../api/sessions'
 import { agentsApi } from '../api/agents'
 import { apiErrorMessage } from '../api/client'
-import { SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton, Spinner } from '../components/ui/Primitives'
+import { Spinner, Modal } from '../components/ui/Primitives'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function SessionsPage() {
   const qc = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
+  const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: sessions, isLoading, error } = useQuery({ queryKey: ['sessions'], queryFn: sessionsApi.list })
-
-  const removeMutation = useMutation({
-    mutationFn: sessionsApi.remove,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sessions'] })
-      if (selectedId) setSelectedId(null)
-      toast.success('Session deleted')
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
+  const { data: sessions, isLoading } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: sessionsApi.list,
   })
 
   const selected = sessions?.find((s) => s.id === selectedId) || null
 
+  if (!selected) {
+    return <ChatWelcome onNew={() => setCreateOpen(true)} sessions={sessions} onSelect={setSelectedId} />
+  }
+
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Sessions</h1>
-          <p className="page-subtitle">Conversation threads between you and your agents.</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-          <Plus size={15} /> New session
-        </button>
-      </div>
-
-      <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <SkeletonTable rows={5} cols={3} />}
-
-      {sessions && sessions.length === 0 && (
-        <EmptyState
-          title="No sessions yet"
-          hint="Start a session with an agent to begin a conversation."
-          icon={MessagesSquare}
-          action={
-            <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
-              <Plus size={14} /> New session
-            </button>
-          }
-        />
-      )}
-
-      {sessions && sessions.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start' }}>
-          <div className="card" style={{ padding: 6 }}>
-            {sessions.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => setSelectedId(s.id)}
-                className={`nav-link${selectedId === s.id ? ' active' : ''}`}
-                style={{ cursor: 'pointer', marginBottom: 2 }}
-              >
-                <span className="nav-link-left" style={{ minWidth: 0 }}>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                    {s.title || 'Untitled session'}
-                  </span>
-                </span>
-                <span className="nav-link-count">{s.message_count}</span>
-              </div>
-            ))}
-          </div>
-
-          {selected ? (
-            <SessionChat session={selected} onDelete={() => removeMutation.mutate(selected.id)} />
-          ) : (
-            <div className="card">
-              <EmptyState title="Select a session" hint="Pick a session from the list to view its messages." icon={MessagesSquare} />
-            </div>
-          )}
-        </div>
-      )}
-
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <ChatView session={selected} onBack={() => setSelectedId(null)} />
       {createOpen && (
         <CreateSessionModal
           onClose={() => setCreateOpen(false)}
-          onCreated={(id) => setSelectedId(id)}
+          onCreated={(id) => { setSelectedId(id); setCreateOpen(false) }}
         />
       )}
     </div>
   )
 }
 
-function SessionChat({ session, onDelete }) {
+function ChatWelcome({ onNew, sessions, onSelect }) {
+  return (
+    <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="chat-welcome">
+        <div className="chat-welcome-icon">
+          <Bot size={32} color="white" />
+        </div>
+        <h2>Arena Chat</h2>
+        <p>
+          Start a conversation with an AI agent. Ask questions, write code,
+          analyze data, or automate tasks.
+        </p>
+
+        <div style={{ marginBottom: 24 }}>
+          <button className="btn btn-primary" onClick={onNew}>
+            <Plus size={16} /> New conversation
+          </button>
+        </div>
+
+        {sessions && sessions.length > 0 && (
+          <div style={{ width: '100%', maxWidth: 500 }}>
+            <h3 style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, textAlign: 'left' }}>
+              Recent conversations
+            </h3>
+            {sessions.slice(0, 5).map((s) => (
+              <div
+                key={s.id}
+                className="card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  marginBottom: 8,
+                  cursor: 'pointer',
+                }}
+                onClick={() => onSelect(s.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 'var(--radius-md)',
+                    background: 'var(--accent-green-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Bot size={16} style={{ color: 'var(--accent-green)' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.title || 'Untitled'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {s.message_count} messages
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ChatView({ session, onBack }) {
   const qc = useQueryClient()
   const [content, setContent] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const messagesEndRef = useRef(null)
+  const textareaRef = useRef(null)
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ['sessions', session.id, 'messages'],
@@ -106,53 +113,171 @@ function SessionChat({ session, onDelete }) {
 
   const sendMutation = useMutation({
     mutationFn: (payload) => sessionsApi.sendMessage(session.id, payload),
+    onMutate: () => setIsTyping(true),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions', session.id, 'messages'] })
       qc.invalidateQueries({ queryKey: ['sessions'] })
       setContent('')
+      setIsTyping(false)
     },
-    onError: (e) => toast.error(apiErrorMessage(e)),
+    onError: (e) => {
+      toast.error(apiErrorMessage(e))
+      setIsTyping(false)
+    },
   })
 
-  return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 420 }}>
-      <div className="flex-between" style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14 }}>{session.title || 'Untitled session'}</h3>
-        <ConfirmButton onConfirm={onDelete} />
-      </div>
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isTyping])
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (content.trim()) sendMutation.mutate({ content, role: 'user' })
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (content.trim()) sendMutation.mutate({ content, role: 'user' })
+  }
+
+  return (
+    <>
+      <div className="chat-messages">
         {isLoading && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
             <Spinner />
           </div>
         )}
-        {messages && messages.length === 0 && (
-          <p className="text-muted" style={{ fontSize: 13, textAlign: 'center', padding: 20 }}>No messages yet.</p>
-        )}
-        {messages?.map((m) => (
-          <div key={m.id} className={`chat-bubble ${m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-agent'}`}>
-            <div className="chat-bubble-role">
-              {m.role} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+
+        {messages?.map((msg) => (
+          <div key={msg.id} className="chat-message">
+            <div className={`chat-message-avatar ${msg.role}`}>
+              {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
             </div>
-            {m.content}
+            <div className="chat-message-content">
+              <div className="chat-message-role">
+                {msg.role === 'user' ? 'You' : 'Arena'}
+                <span className="time">
+                  {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                </span>
+              </div>
+              <div className="chat-message-text">
+                <MessageContent content={msg.content} />
+              </div>
+            </div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="chat-message">
+            <div className="chat-message-avatar assistant">
+              <Bot size={14} />
+            </div>
+            <div className="chat-message-content">
+              <div className="chat-message-role">Arena</div>
+              <div style={{ display: 'flex', gap: 4, padding: '8px 0' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.4s ease-in-out 0.2s infinite' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse 1.4s ease-in-out 0.4s infinite' }} />
+              </div>
+              <style>{`@keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }`}</style>
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
       </div>
 
-      <form
-        className="flex-row"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (content.trim()) sendMutation.mutate({ content, role: 'user' })
-        }}
-      >
-        <input className="input" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Send a message…" />
-        <button className="btn btn-primary btn-sm" disabled={sendMutation.isPending}>
-          <Send size={13} />
-        </button>
-      </form>
-    </div>
+      <div className="chat-input-container">
+        <form className="chat-input-wrapper" onSubmit={handleSubmit}>
+          <div className="chat-input-top">
+            <textarea
+              ref={textareaRef}
+              className="chat-input"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Message Arena…"
+              rows={1}
+              style={{ height: 'auto' }}
+              onInput={(e) => {
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'
+              }}
+            />
+            <button
+              type="submit"
+              className="chat-input-send"
+              disabled={!content.trim() || sendMutation.isPending}
+            >
+              <Send size={16} />
+            </button>
+          </div>
+          <div className="chat-input-bottom">
+            <button type="button" className="chat-input-action">
+              <Paperclip size={13} /> Attach
+            </button>
+            <button type="button" className="chat-input-action">
+              <Terminal size={13} /> Tools
+            </button>
+            <div className="chat-input-model">
+              <Bot size={12} /> Arena Agent
+            </div>
+          </div>
+        </form>
+      </div>
+    </>
+  )
+}
+
+function MessageContent({ content }) {
+  if (!content) return null
+
+  // Simple markdown-like rendering
+  const parts = content.split(/(```[\s\S]*?```|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g)
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        // Code blocks
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const lines = part.slice(3, -3).split('\n')
+          const lang = lines[0].trim()
+          const code = lang ? lines.slice(1).join('\n') : lines.join('\n')
+          return (
+            <div key={i}>
+              {lang && <div className="code-header"><span>{lang}</span></div>}
+              <pre><code>{code}</code></pre>
+            </div>
+          )
+        }
+        // Inline code
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return <code key={i}>{part.slice(1, -1)}</code>
+        }
+        // Bold
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>
+        }
+        // Italic
+        if (part.startsWith('*') && part.endsWith('*')) {
+          return <em key={i}>{part.slice(1, -1)}</em>
+        }
+        // Regular text with line breaks
+        return (
+          <span key={i}>
+            {part.split('\n').map((line, j) => (
+              <span key={j}>
+                {j > 0 && <br />}
+                {line}
+              </span>
+            ))}
+          </span>
+        )
+      })}
+    </>
   )
 }
 
@@ -169,41 +294,28 @@ function CreateSessionModal({ onClose, onCreated }) {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       toast.success('Session created')
       onCreated(session.id)
-      onClose()
     },
     onError: (e) => toast.error(apiErrorMessage(e)),
   })
 
   return (
-    <Modal title="New session" onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          mutation.mutate()
-        }}
-      >
+    <Modal title="New conversation" onClose={onClose}>
+      <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
         <div className="field">
           <label>Agent</label>
           <select className="select" required value={agentId} onChange={(e) => setAgentId(e.target.value)}>
-            <option value="" disabled>
-              Choose an agent
-            </option>
+            <option value="" disabled>Choose an agent</option>
             {agents?.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
+              <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
-          {agents && agents.length === 0 && (
-            <span className="field-hint">You'll need to create an agent first.</span>
-          )}
         </div>
         <div className="field">
           <label>Title (optional)</label>
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Session title" />
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give it a name" />
         </div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={mutation.isPending || !agentId}>
-          {mutation.isPending ? 'Creating…' : 'Create session'}
+          {mutation.isPending ? 'Creating…' : 'Start conversation'}
         </button>
       </form>
     </Modal>

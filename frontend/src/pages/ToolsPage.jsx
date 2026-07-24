@@ -12,7 +12,7 @@ export default function ToolsPage() {
   const { data: executions } = useQuery({ queryKey: ['tools', 'executions'], queryFn: toolsApi.executions })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Tools</h1>

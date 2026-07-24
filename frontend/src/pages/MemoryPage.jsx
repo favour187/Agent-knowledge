@@ -36,7 +36,7 @@ export default function MemoryPage() {
   })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Memory</h1>

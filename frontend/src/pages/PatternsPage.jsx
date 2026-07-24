@@ -21,7 +21,7 @@ export default function PatternsPage() {
   })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Learned patterns</h1>

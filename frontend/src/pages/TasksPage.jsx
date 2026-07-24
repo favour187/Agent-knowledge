@@ -28,7 +28,7 @@ export default function TasksPage() {
   })
 
   return (
-    <div className="page">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Tasks</h1>
