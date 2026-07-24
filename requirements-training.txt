@@ -1,0 +1,46 @@
+# Training dependencies (adapter fine-tuning: LoRA / QLoRA / full fine-tune)
+# Install with: pip install -r requirements-training.txt
+#
+# NOTE: This is the CORE set needed to run core/training/*. A previous version
+# of this file listed several packages that do not exist on PyPI under these
+# names/pins (apex, fused-layers, megatron-lm, bleu>=1.0.0) which made
+# `pip install -r requirements-training.txt` fail outright. Those have been
+# removed/fixed below. Heavy, optional extras (distributed training, ONNX/GGUF
+# export, experiment tracking) now live in requirements-training-extra.txt so
+# a basic LoRA/QLoRA setup isn't blocked by them.
+
+# Core ML
+torch>=2.1.0
+
+# Transformers and fine-tuning
+transformers>=4.36.0
+datasets>=2.16.0
+accelerate>=0.25.0
+peft>=0.7.0
+tokenizers>=0.15.0
+huggingface-hub>=0.20.0
+
+# Quantization (for QLoRA) — requires a CUDA GPU to actually run in 4-bit/8-bit
+bitsandbytes>=0.41.0
+safetensors>=0.4.0
+
+# Structured logging (used throughout core/training/*)
+structlog>=23.2.0
+
+# Data processing
+numpy>=1.26.0
+pandas>=2.1.0
+pyarrow>=14.0.0
+
+# Utilities
+tqdm>=4.66.0
+rich>=13.7.0
+click>=8.1.0
+
+# Evaluation
+scikit-learn>=1.3.0
+sacrebleu>=2.4.0
+rouge-score>=0.1.0
+
+# Experiment tracking (TrainingArguments report_to defaults to none; enable if you use these)
+tensorboard>=2.15.0

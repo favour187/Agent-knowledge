@@ -1,0 +1,116 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arena-ai-platform"
+version = "0.1.0"
+description = "Comprehensive autonomous AI agent platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Arena AI Team", email = "team@arena.ai"}
+]
+keywords = ["ai", "agent", "llm", "autonomous", "platform"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "starlette>=0.35.0",
+    
+    # Database
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "pgvector>=0.2.3",
+    
+    # Redis
+    "redis>=5.0.1",
+    "aioredis>=2.0.1",
+    
+    # AI/ML
+    "openai>=1.12.0",
+    "anthropic>=0.18.0",
+    "tiktoken>=0.5.2",
+    "numpy>=1.26.3",
+    
+    # Security
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.9",
+    
+    # Validation
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "email-validator>=2.1.0",
+    
+    # Utilities
+    "httpx>=0.26.0",
+    "tenacity>=8.2.3",
+    "structlog>=24.1.0",
+    "python-dateutil>=2.8.2",
+    "uuid6>=2024.1.12",
+    
+    # File handling
+    "python-magic>=0.4.27",
+    "aiofiles>=23.2.1",
+    
+    # GraphQL
+    "strawberry-graphql[fastapi]>=0.219.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.4",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.26.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "faker>=22.6.0",
+]
+
+frontend = [
+    "node>=20.0.0",
+]
+
+[project.urls]
+Homepage = "https://arena.ai"
+Documentation = "https://docs.arena.ai"
+Repository = "https://github.com/arena-ai/platform"
+Changelog = "https://github.com/arena-ai/platform/releases"
+
+[project.scripts]
+arena = "arena.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "database*", "api*", "tools*", "security*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --cov=core --cov-report=term-missing"

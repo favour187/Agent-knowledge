@@ -1,0 +1,1 @@
+{"base_model": "gpt2", "adapter_path": "../../Agent-knowledge/adapters_complete/sample_train-20260722-192258", "strategy": "lora", "rank": 16}

@@ -1,0 +1,3 @@
+{"instruction": "What is the capital of France?", "response": "The capital of France is Paris."}
+{"instruction": "Explain LoRA briefly.", "response": "LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method that freezes pre-trained model weights and trains small low-rank adapter matrices."}
+{"instruction": "What is QLoRA?", "response": "QLoRA combines 4-bit quantization with LoRA adapters, enabling fine-tuning of very large models on limited GPU memory."}
