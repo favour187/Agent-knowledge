@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, Bot, MessagesSquare, ListChecks, Workflow,
   BrainCircuit, Network, Sparkles, Wrench, Gauge, ThumbsUp,
-  ScrollText, KeyRound,
+  ScrollText, KeyRound, Code2,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { agentsApi } from '../../api/agents'
@@ -23,6 +23,7 @@ const intelligenceNav = [
   { to: '/knowledge', label: 'Knowledge', icon: Network },
   { to: '/patterns', label: 'Patterns', icon: Sparkles },
   { to: '/tools', label: 'Tools', icon: Wrench },
+  { to: '/workspace', label: 'Workspace', icon: Code2 },
 ]
 
 const qualityNav = [
