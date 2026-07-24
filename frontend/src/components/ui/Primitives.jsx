@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Bot, MessagesSquare, ListChecks, Workflow,
   BrainCircuit, Network, Sparkles, Wrench, Gauge, ThumbsUp,
-  ScrollText, KeyRound, Code2,
+  ScrollText, KeyRound, Code2, Zap,
 } from 'lucide-react'
 
 /* ---------- Status Badge ---------- */
@@ -179,6 +179,7 @@ const cmdPaletteRoutes = [
   { to: '/patterns', label: 'Patterns', hint: 'Learned patterns', icon: Sparkles, group: 'Intelligence' },
   { to: '/tools', label: 'Tools', hint: 'Tool registry', icon: Wrench, group: 'Intelligence' },
   { to: '/workspace', label: 'Workspace', hint: 'Sandbox & code editor', icon: Code2, group: 'Intelligence' },
+  { to: '/training', label: 'Training', hint: 'Fine-tune adapters', icon: Zap, group: 'Intelligence' },
   { to: '/evaluation', label: 'Evaluation', hint: 'Self-evaluation', icon: Gauge, group: 'Quality' },
   { to: '/feedback', label: 'Feedback', hint: 'Human feedback', icon: ThumbsUp, group: 'Quality' },
   { to: '/audit', label: 'Audit log', hint: 'Action history', icon: ScrollText, group: 'System' },

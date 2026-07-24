@@ -16,6 +16,7 @@ import EvaluationPage from './pages/EvaluationPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AuditPage from './pages/AuditPage'
 import ApiKeysPage from './pages/ApiKeysPage'
+import TrainingPage from './pages/TrainingPage'
 import WorkspacePage from './pages/WorkspacePage'
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="patterns" element={<PatternsPage />} />
         <Route path="tools" element={<ToolsPage />} />
         <Route path="workspace" element={<WorkspacePage />} />
+        <Route path="training" element={<TrainingPage />} />
         <Route path="evaluation" element={<EvaluationPage />} />
         <Route path="feedback" element={<FeedbackPage />} />
         <Route path="audit" element={<AuditPage />} />

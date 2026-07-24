@@ -13,6 +13,7 @@ const routeLabels = {
   '/patterns': 'Patterns',
   '/tools': 'Tools',
   '/workspace': 'Workspace',
+  '/training': 'Training',
   '/evaluation': 'Evaluation',
   '/feedback': 'Feedback',
   '/audit': 'Audit log',

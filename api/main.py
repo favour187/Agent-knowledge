@@ -52,6 +52,7 @@ from api.routes import (
     sessions,
     tasks,
     tools,
+    training,
     workspace,
 )
 
@@ -212,6 +213,7 @@ app.include_router(feedback.router, prefix="/api/feedback", tags=["Feedback"])
 app.include_router(patterns.router, prefix="/api/patterns", tags=["Patterns"])
 app.include_router(audit.router, prefix="/api/audit", tags=["Audit"])
 app.include_router(api_keys.router, prefix="/api/api-keys", tags=["API Keys"])
+app.include_router(training.router, prefix="/api/training", tags=["Training"])
 app.include_router(workspace.router, prefix="/api/workspace", tags=["Workspace"])
 
 
