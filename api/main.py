@@ -41,6 +41,7 @@ from database.db import init_db
 # Import routes
 from api.routes import (
     agents,
+    agent_chat,
     api_keys,
     audit,
     auth,
@@ -202,6 +203,7 @@ async def root() -> dict[str, str]:
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(agent_chat.router, prefix="/api/agent", tags=["Agent"])
 app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
