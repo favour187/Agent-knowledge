@@ -18,12 +18,12 @@ print("STEP 1: Creating local GPT-2 model (124M params equivalent)")
 print("=" * 60)
 
 config = GPT2Config(
-    vocab_size=1000,
-    n_positions=128,
-    n_embd=256,
-    n_layer=4,
-    n_head=4,
-    n_inner=512,
+    vocab_size=2000,
+    n_positions=512,
+    n_embd=384,
+    n_layer=6,
+    n_head=6,
+    n_inner=768,
     activation_function="gelu_new",
     resid_pdrop=0.1,
     embd_pdrop=0.1,
@@ -53,7 +53,8 @@ print("=" * 60)
 
 data_dir = os.path.join(REPO_ROOT, "data")
 texts = []
-for fname in ["sample_train.jsonl", "sample_chat.jsonl"]:
+data_files = ["sample_train.jsonl", "sample_chat.jsonl", "coding_knowledge.jsonl"]
+for fname in data_files:
     fpath = os.path.join(data_dir, fname)
     if os.path.exists(fpath):
         with open(fpath) as f:
@@ -63,8 +64,13 @@ for fname in ["sample_train.jsonl", "sample_chat.jsonl"]:
                     if "text" in obj:
                         texts.append(obj["text"])
                     elif "messages" in obj:
+                        # Convert chat format to text
+                        chat_text = ""
                         for msg in obj["messages"]:
-                            texts.append(msg.get("content", ""))
+                            role = msg.get("role", "user")
+                            content = msg.get("content", "")
+                            chat_text += f"{role}: {content}\n"
+                        texts.append(chat_text.strip())
 
 # Also load instruction data (JSONL format)
 inst_path = os.path.join(data_dir, "sample_instruction.json")
@@ -82,7 +88,7 @@ print(f"  Training texts: {len(texts)}")
 tokenizer = Tokenizer(models.BPE(unk_token="<unk>"))
 tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
 trainer = trainers.BpeTrainer(
-    vocab_size=1000,
+    vocab_size=2000,
     min_frequency=1,
     special_tokens=["<unk>", "<pad>", "<bos>", "<eos>"],
 )
@@ -108,7 +114,7 @@ print("=" * 60)
 
 train_data = []
 for t in texts:
-    if t.strip():
+    if t.strip() and len(t.strip()) > 10:  # skip very short entries
         train_data.append({"text": t})
 
 train_path = os.path.join(data_dir, "_train_local.jsonl")
@@ -126,23 +132,23 @@ print("=" * 60)
 from core.training.pretrain import PipelineConfig, run_training_pipeline
 
 config = PipelineConfig(
-    project_name="arena-agent-training",
+    project_name="arena-coding-model",
     base_model=save_path,
     train_data_path=train_path,
     output_dir=os.path.join(REPO_ROOT, "adapters"),
-    epochs=5,
+    epochs=10,
     batch_size=2,
     strategy="lora",
-    lora_r=8,
-    lora_alpha=16,
-    lora_dropout=0.0,
+    lora_r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
     lora_target_modules=["c_attn", "c_proj"],
-    learning_rate=5e-4,
-    max_seq_length=128,
+    learning_rate=3e-4,
+    max_seq_length=512,
     save_interval=10000,
     eval_interval=10000,
-    logging_interval=1,
-    gradient_accumulation=1,
+    logging_interval=5,
+    gradient_accumulation=2,
 )
 
 print(f"  Base model: {config.base_model}")
