@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus } from 'lucide-react'
+import { Plus, ListChecks } from 'lucide-react'
 import { tasksApi } from '../api/tasks'
 import { apiErrorMessage } from '../api/client'
-import { StatusBadge, LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { StatusBadge, SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 const STATUSES = ['pending', 'running', 'completed', 'failed']
 
@@ -40,12 +40,17 @@ export default function TasksPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={4} cols={5} />
+        </div>
+      )}
 
       {tasks && tasks.length === 0 && (
         <EmptyState
           title="No tasks yet"
           hint="Create a task to queue work for an agent."
+          icon={ListChecks}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New task
@@ -71,7 +76,7 @@ export default function TasksPage() {
                 <tr key={task.id}>
                   <td>
                     <div style={{ fontWeight: 500 }}>{task.title}</div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>{task.description}</div>
+                    {task.description && <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>{task.description}</div>}
                   </td>
                   <td className="mono text-muted">{task.priority}</td>
                   <td>
@@ -82,9 +87,7 @@ export default function TasksPage() {
                       onChange={(e) => updateMutation.mutate({ id: task.id, payload: { status: e.target.value } })}
                     >
                       {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
+                        <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
                   </td>
@@ -132,12 +135,7 @@ function CreateTaskModal({ onClose }) {
         </div>
         <div className="field">
           <label>Description</label>
-          <textarea
-            className="textarea"
-            rows={3}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
+          <textarea className="textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </div>
         <div className="field">
           <label>Priority (0–100)</label>

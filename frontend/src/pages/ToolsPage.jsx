@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Play } from 'lucide-react'
+import { Play, Wrench } from 'lucide-react'
 import { toolsApi } from '../api/tools'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
+import { SkeletonCards, SkeletonTable, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
 
 export default function ToolsPage() {
   const [runTool, setRunTool] = useState(null)
@@ -21,12 +21,14 @@ export default function ToolsPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && <SkeletonCards count={4} />}
 
-      {tools && tools.length === 0 && <EmptyState title="No tools registered" hint="Register tools in the tool registry to make them available here." />}
+      {tools && tools.length === 0 && (
+        <EmptyState title="No tools registered" hint="Register tools in the tool registry to make them available here." icon={Wrench} />
+      )}
 
       {tools && tools.length > 0 && (
-        <div className="grid-cards" style={{ marginBottom: 26 }}>
+        <div className="grid-cards" style={{ marginBottom: 28 }}>
           {tools.map((tool) => (
             <div key={tool.name} className="card">
               <div className="flex-row" style={{ justifyContent: 'space-between' }}>
@@ -34,7 +36,7 @@ export default function ToolsPage() {
                 {tool.requires_confirmation && <span className="badge status-pending">confirm</span>}
               </div>
               <h3 className="mono" style={{ fontSize: 14, marginTop: 10 }}>{tool.name}</h3>
-              <p className="text-muted" style={{ fontSize: 12.5, marginTop: 4, marginBottom: 12 }}>{tool.description}</p>
+              <p className="text-muted" style={{ fontSize: 12.5, marginTop: 4, marginBottom: 14 }}>{tool.description}</p>
               <button className="btn btn-sm" onClick={() => setRunTool(tool)}>
                 <Play size={13} /> Run
               </button>
@@ -44,8 +46,14 @@ export default function ToolsPage() {
       )}
 
       <div className="card">
-        <h3 style={{ fontSize: 14, marginBottom: 12 }}>Recent executions</h3>
-        {(!executions || executions.length === 0) && <p className="text-muted" style={{ fontSize: 13 }}>No executions logged yet.</p>}
+        <h3 style={{ fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Play size={14} style={{ color: 'var(--amber)' }} />
+          Recent executions
+        </h3>
+        {isLoading && <SkeletonTable rows={3} cols={4} />}
+        {(!executions || executions.length === 0) && !isLoading && (
+          <p className="text-muted" style={{ fontSize: 13, padding: '8px 0' }}>No executions logged yet.</p>
+        )}
         {executions && executions.length > 0 && (
           <table className="table">
             <thead>
@@ -106,7 +114,7 @@ function RunToolModal({ tool, onClose }) {
 
   return (
     <Modal title={`Run ${tool.name}`} onClose={onClose} width={560}>
-      <p className="text-muted" style={{ fontSize: 12.5, marginBottom: 12 }}>
+      <p className="text-muted" style={{ fontSize: 12.5, marginBottom: 14 }}>
         Schema: <code className="mono">{JSON.stringify(tool.tool_schema)}</code>
       </p>
       <form
@@ -125,8 +133,8 @@ function RunToolModal({ tool, onClose }) {
       </form>
 
       {result && (
-        <div className="card" style={{ marginTop: 14, fontSize: 12.5 }}>
-          <div className="text-muted" style={{ marginBottom: 6 }}>Result</div>
+        <div className="card" style={{ marginTop: 16, fontSize: 12.5 }}>
+          <div className="text-muted" style={{ marginBottom: 8 }}>Result</div>
           <pre className="mono" style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
             {JSON.stringify(result.output ?? result.error, null, 2)}
           </pre>

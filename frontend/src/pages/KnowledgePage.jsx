@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Link2 } from 'lucide-react'
+import { Plus, Link2, Network } from 'lucide-react'
 import { knowledgeApi } from '../api/knowledge'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { SkeletonCards, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function KnowledgePage() {
   const qc = useQueryClient()
@@ -40,12 +40,13 @@ export default function KnowledgePage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && <SkeletonCards count={6} />}
 
       {entities && entities.length === 0 && (
         <EmptyState
           title="No entities yet"
           hint="Add an entity to start building your knowledge graph."
+          icon={Network}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New entity
@@ -146,13 +147,9 @@ function CreateRelationModal({ entities, onClose }) {
         <div className="field">
           <label>Source entity</label>
           <select className="select" required value={form.source_id} onChange={(e) => setForm({ ...form, source_id: e.target.value })}>
-            <option value="" disabled>
-              Choose entity
-            </option>
+            <option value="" disabled>Choose entity</option>
             {entities.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
+              <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
         </div>
@@ -169,13 +166,9 @@ function CreateRelationModal({ entities, onClose }) {
         <div className="field">
           <label>Target entity</label>
           <select className="select" required value={form.target_id} onChange={(e) => setForm({ ...form, target_id: e.target.value })}>
-            <option value="" disabled>
-              Choose entity
-            </option>
+            <option value="" disabled>Choose entity</option>
             {entities.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
+              <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
         </div>

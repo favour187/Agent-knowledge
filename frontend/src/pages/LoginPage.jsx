@@ -21,7 +21,7 @@ export default function LoginPage() {
         const user = await authApi.me()
         setSession(data.access_token, user)
       } catch {
-        // /me failing shouldn't block login; user profile is best-effort here
+        // /me failing shouldn't block login
       }
       toast.success('Signed in')
       navigate('/')
@@ -36,12 +36,12 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="brand" style={{ padding: '0 0 22px' }}>
-          <span className="brand-mark pulse" />
+        <div className="brand" style={{ padding: '0 0 28px' }}>
+          <span className="brand-mark" />
           Arena
         </div>
-        <h2 style={{ marginBottom: 4 }}>Sign in</h2>
-        <p className="text-muted" style={{ fontSize: 13, marginBottom: 22 }}>
+        <h2 style={{ marginBottom: 4, fontSize: 20 }}>Sign in</h2>
+        <p className="text-muted" style={{ fontSize: 13, marginBottom: 24 }}>
           Control room for your agents, tasks, and memory.
         </p>
 
@@ -58,6 +58,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              autoComplete="email"
             />
           </div>
           <div className="field">
@@ -70,15 +71,23 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              autoComplete="current-password"
             />
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={mutation.isPending}>
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
-        <p className="text-muted" style={{ fontSize: 13, marginTop: 18, textAlign: 'center' }}>
-          No account? <Link to="/register" style={{ color: 'var(--amber)' }}>Create one</Link>
+        <p className="text-muted" style={{ fontSize: 13, marginTop: 20, textAlign: 'center' }}>
+          No account?{' '}
+          <Link to="/register" style={{ color: 'var(--amber)', fontWeight: 500 }}>
+            Create one
+          </Link>
         </p>
       </div>
     </div>

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { patternsApi } from '../api/patterns'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function PatternsPage() {
   const qc = useQueryClient()
@@ -33,9 +33,19 @@ export default function PatternsPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={4} cols={4} />
+        </div>
+      )}
 
-      {patterns && patterns.length === 0 && <EmptyState title="No patterns learned yet" hint="Patterns accumulate as agents succeed at tasks, or add one manually." />}
+      {patterns && patterns.length === 0 && (
+        <EmptyState
+          title="No patterns learned yet"
+          hint="Patterns accumulate as agents succeed at tasks, or add one manually."
+          icon={Sparkles}
+        />
+      )}
 
       {patterns && patterns.length > 0 && (
         <div className="card" style={{ padding: 0 }}>
@@ -53,7 +63,7 @@ export default function PatternsPage() {
                 <tr key={p.id}>
                   <td>
                     <div className="mono" style={{ fontWeight: 500 }}>{p.pattern_key}</div>
-                    {p.context && <div className="text-muted" style={{ fontSize: 12 }}>{p.context}</div>}
+                    {p.context && <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>{p.context}</div>}
                   </td>
                   <td className="mono text-muted">{Math.round(p.success_rate * 100)}%</td>
                   <td className="mono text-muted">{p.usage_count}</td>

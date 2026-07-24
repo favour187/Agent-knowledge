@@ -33,12 +33,12 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="brand" style={{ padding: '0 0 22px' }}>
-          <span className="brand-mark pulse" />
+        <div className="brand" style={{ padding: '0 0 28px' }}>
+          <span className="brand-mark" />
           Arena
         </div>
-        <h2 style={{ marginBottom: 4 }}>Create your account</h2>
-        <p className="text-muted" style={{ fontSize: 13, marginBottom: 22 }}>
+        <h2 style={{ marginBottom: 4, fontSize: 20 }}>Create your account</h2>
+        <p className="text-muted" style={{ fontSize: 13, marginBottom: 24 }}>
           Set up access to the platform.
         </p>
 
@@ -47,7 +47,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="name">Name</label>
-            <input id="name" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
+            <input id="name" className="input" required value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
           </div>
           <div className="field">
             <label htmlFor="email">Email</label>
@@ -58,6 +58,7 @@ export default function RegisterPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
             />
           </div>
           <div className="field">
@@ -70,15 +71,19 @@ export default function RegisterPage() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
             />
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={mutation.isPending}>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} disabled={mutation.isPending}>
             {mutation.isPending ? 'Creating…' : 'Create account'}
           </button>
         </form>
 
-        <p className="text-muted" style={{ fontSize: 13, marginTop: 18, textAlign: 'center' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--amber)' }}>Sign in</Link>
+        <p className="text-muted" style={{ fontSize: 13, marginTop: 20, textAlign: 'center' }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: 'var(--amber)', fontWeight: 500 }}>
+            Sign in
+          </Link>
         </p>
       </div>
     </div>

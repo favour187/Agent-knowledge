@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { auditApi } from '../api/audit'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner } from '../components/ui/Primitives'
+import { ScrollText } from 'lucide-react'
 
 export default function AuditPage() {
   const { data: logs, isLoading, error } = useQuery({ queryKey: ['audit'], queryFn: auditApi.list })
@@ -16,9 +17,15 @@ export default function AuditPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={8} cols={4} />
+        </div>
+      )}
 
-      {logs && logs.length === 0 && <EmptyState title="Nothing recorded yet" hint="Actions like logins and resource changes will show up here." />}
+      {logs && logs.length === 0 && (
+        <EmptyState title="Nothing recorded yet" hint="Actions like logins and resource changes will show up here." icon={ScrollText} />
+      )}
 
       {logs && logs.length > 0 && (
         <div className="card" style={{ padding: 0 }}>

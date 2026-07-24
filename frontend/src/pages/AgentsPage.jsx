@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Play, Square, MessageCircle } from 'lucide-react'
+import { Plus, Play, Square, MessageCircle, Bot } from 'lucide-react'
 import { agentsApi } from '../api/agents'
 import { apiErrorMessage } from '../api/client'
-import { StatusBadge, LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { StatusBadge, SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function AgentsPage() {
   const qc = useQueryClient()
@@ -46,12 +46,17 @@ export default function AgentsPage() {
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
 
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={4} cols={5} />
+        </div>
+      )}
 
       {agents && agents.length === 0 && (
         <EmptyState
           title="No agents yet"
           hint="Create an agent to give it a model, a system prompt, and tools."
+          icon={Bot}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New agent
@@ -69,7 +74,7 @@ export default function AgentsPage() {
                 <th>Model</th>
                 <th>Status</th>
                 <th>Created</th>
-                <th></th>
+                <th style={{ width: 120 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -77,26 +82,46 @@ export default function AgentsPage() {
                 <tr key={agent.id}>
                   <td>
                     <div style={{ fontWeight: 500 }}>{agent.name}</div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
-                      {agent.description}
-                    </div>
+                    {agent.description && (
+                      <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
+                        {agent.description}
+                      </div>
+                    )}
                   </td>
-                  <td className="mono text-muted">{agent.model}</td>
+                  <td>
+                    <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {agent.model}
+                    </span>
+                  </td>
                   <td>
                     <StatusBadge status={agent.status} />
                   </td>
                   <td className="text-muted">{new Date(agent.created_at).toLocaleDateString()}</td>
                   <td>
-                    <div className="flex-row">
-                      <button className="btn btn-ghost btn-sm" onClick={() => setMessageAgent(agent)} title="Message">
+                    <div className="flex-row gap-sm">
+                      <button
+                        className="btn-icon"
+                        onClick={() => setMessageAgent(agent)}
+                        title="Message"
+                      >
                         <MessageCircle size={14} />
                       </button>
                       {agent.status === 'running' ? (
-                        <button className="btn btn-ghost btn-sm" onClick={() => stopMutation.mutate(agent.id)} title="Stop">
+                        <button
+                          className="btn-icon"
+                          onClick={() => stopMutation.mutate(agent.id)}
+                          title="Stop"
+                          style={{ color: 'var(--danger)' }}
+                        >
                           <Square size={14} />
                         </button>
                       ) : (
-                        <button className="btn btn-ghost btn-sm" onClick={() => startMutation.mutate(agent.id)} title="Start">
+                        <button
+                          className="btn-icon"
+                          onClick={() => startMutation.mutate(agent.id)}
+                          title="Start"
+                          style={{ color: 'var(--teal)' }}
+                        >
                           <Play size={14} />
                         </button>
                       )}
@@ -201,20 +226,12 @@ function MessageAgentModal({ agent, onClose }) {
   return (
     <Modal title={`Message ${agent.name}`} onClose={onClose} width={560}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320, overflowY: 'auto', marginBottom: 14 }}>
-        {thread.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>Send a message to this agent directly.</p>}
+        {thread.length === 0 && (
+          <p className="text-muted" style={{ fontSize: 13 }}>Send a message to this agent directly.</p>
+        )}
         {thread.map((m, i) => (
-          <div
-            key={i}
-            className="card"
-            style={{
-              padding: 10,
-              fontSize: 13,
-              background: m.role === 'user' ? 'var(--bg-raised)' : 'var(--bg-canvas)',
-            }}
-          >
-            <div className="text-muted" style={{ fontSize: 10.5, textTransform: 'uppercase', marginBottom: 4 }}>
-              {m.role}
-            </div>
+          <div key={i} className={`chat-bubble ${m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-agent'}`}>
+            <div className="chat-bubble-role">{m.role}</div>
             {m.content}
           </div>
         ))}

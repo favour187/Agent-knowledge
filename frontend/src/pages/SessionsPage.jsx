@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Send } from 'lucide-react'
+import { Plus, Send, MessagesSquare } from 'lucide-react'
 import { sessionsApi } from '../api/sessions'
 import { agentsApi } from '../api/agents'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton, Spinner } from '../components/ui/Primitives'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function SessionsPage() {
@@ -40,12 +40,13 @@ export default function SessionsPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && <SkeletonTable rows={5} cols={3} />}
 
       {sessions && sessions.length === 0 && (
         <EmptyState
           title="No sessions yet"
           hint="Start a session with an agent to begin a conversation."
+          icon={MessagesSquare}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New session
@@ -69,9 +70,7 @@ export default function SessionsPage() {
                     {s.title || 'Untitled session'}
                   </span>
                 </span>
-                <span className="text-muted" style={{ fontSize: 11 }}>
-                  {s.message_count}
-                </span>
+                <span className="nav-link-count">{s.message_count}</span>
               </div>
             ))}
           </div>
@@ -80,7 +79,7 @@ export default function SessionsPage() {
             <SessionChat session={selected} onDelete={() => removeMutation.mutate(selected.id)} />
           ) : (
             <div className="card">
-              <EmptyState title="Select a session" hint="Pick a session from the list to view its messages." />
+              <EmptyState title="Select a session" hint="Pick a session from the list to view its messages." icon={MessagesSquare} />
             </div>
           )}
         </div>
@@ -117,28 +116,23 @@ function SessionChat({ session, onDelete }) {
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 420 }}>
-      <div className="flex-row" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
+      <div className="flex-between" style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 14 }}>{session.title || 'Untitled session'}</h3>
         <ConfirmButton onConfirm={onDelete} />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-        {isLoading && <LoadingBlock />}
-        {messages && messages.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>No messages yet.</p>}
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        {isLoading && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+            <Spinner />
+          </div>
+        )}
+        {messages && messages.length === 0 && (
+          <p className="text-muted" style={{ fontSize: 13, textAlign: 'center', padding: 20 }}>No messages yet.</p>
+        )}
         {messages?.map((m) => (
-          <div
-            key={m.id}
-            style={{
-              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '75%',
-              background: m.role === 'user' ? 'var(--bg-raised)' : 'var(--bg-canvas)',
-              border: '1px solid var(--border-soft)',
-              borderRadius: 10,
-              padding: '9px 12px',
-              fontSize: 13.5,
-            }}
-          >
-            <div className="text-muted" style={{ fontSize: 10.5, textTransform: 'uppercase', marginBottom: 3 }}>
+          <div key={m.id} className={`chat-bubble ${m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-agent'}`}>
+            <div className="chat-bubble-role">
               {m.role} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
             </div>
             {m.content}

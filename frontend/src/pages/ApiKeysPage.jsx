@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Copy } from 'lucide-react'
+import { Plus, Copy, KeyRound } from 'lucide-react'
 import { apiKeysApi } from '../api/apiKeys'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function ApiKeysPage() {
   const qc = useQueryClient()
@@ -35,12 +35,17 @@ export default function ApiKeysPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={3} cols={5} />
+        </div>
+      )}
 
       {keys && keys.length === 0 && (
         <EmptyState
           title="No API keys yet"
           hint="Create a key to authenticate programmatic requests."
+          icon={KeyRound}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New key
@@ -144,7 +149,16 @@ function RevealKeyModal({ apiKey, onClose }) {
       <p className="text-muted" style={{ fontSize: 13, marginBottom: 14 }}>
         This is the only time the full key is shown. Store it somewhere safe.
       </p>
-      <div className="card mono" style={{ wordBreak: 'break-all', fontSize: 13, marginBottom: 14 }}>
+      <div
+        className="card mono"
+        style={{
+          wordBreak: 'break-all',
+          fontSize: 13,
+          marginBottom: 14,
+          background: 'var(--bg-canvas)',
+          borderColor: 'var(--amber-dim)',
+        }}
+      >
         {apiKey.api_key}
       </div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={copy}>

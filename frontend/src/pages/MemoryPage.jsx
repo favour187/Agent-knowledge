@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, Search, Layers } from 'lucide-react'
+import { Plus, Search, Layers, BrainCircuit } from 'lucide-react'
 import { memoryApi } from '../api/memory'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function MemoryPage() {
   const qc = useQueryClient()
@@ -73,10 +73,14 @@ export default function MemoryPage() {
       </form>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={5} cols={5} />
+        </div>
+      )}
 
       {data && data.results.length === 0 && (
-        <EmptyState title="No memories found" hint="Try a different search, or add a new memory." />
+        <EmptyState title="No memories found" hint="Try a different search, or add a new memory." icon={BrainCircuit} />
       )}
 
       {data && data.results.length > 0 && (

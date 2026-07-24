@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus } from 'lucide-react'
+import { Plus, ThumbsUp } from 'lucide-react'
 import { feedbackApi } from '../api/feedback'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
 
 export default function FeedbackPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -23,9 +23,15 @@ export default function FeedbackPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && (
+        <div className="card" style={{ padding: 0 }}>
+          <SkeletonTable rows={4} cols={5} />
+        </div>
+      )}
 
-      {feedback && feedback.length === 0 && <EmptyState title="No feedback recorded yet" hint="Feedback on agent outputs will appear here." />}
+      {feedback && feedback.length === 0 && (
+        <EmptyState title="No feedback recorded yet" hint="Feedback on agent outputs will appear here." icon={ThumbsUp} />
+      )}
 
       {feedback && feedback.length > 0 && (
         <div className="card" style={{ padding: 0 }}>
@@ -115,8 +121,9 @@ function CreateFeedbackModal({ onClose }) {
             type="checkbox"
             checked={form.success}
             onChange={(e) => setForm({ ...form, success: e.target.checked })}
+            style={{ accentColor: 'var(--amber)' }}
           />
-          <label htmlFor="success" style={{ margin: 0 }}>Marked as successful</label>
+          <label htmlFor="success" style={{ margin: 0, cursor: 'pointer' }}>Marked as successful</label>
         </div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={mutation.isPending}>
           {mutation.isPending ? 'Saving…' : 'Save feedback'}

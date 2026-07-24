@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, Workflow } from 'lucide-react'
 import { plansApi } from '../api/plans'
 import { apiErrorMessage } from '../api/client'
-import { StatusBadge, LoadingBlock, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
+import { StatusBadge, SkeletonTable, EmptyState, ErrorBanner, Modal, ConfirmButton } from '../components/ui/Primitives'
 
 export default function PlansPage() {
   const qc = useQueryClient()
@@ -35,12 +35,13 @@ export default function PlansPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && <SkeletonTable rows={4} cols={3} />}
 
       {plans && plans.length === 0 && (
         <EmptyState
           title="No plans yet"
           hint="Create a plan to break a goal into steps."
+          icon={Workflow}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setCreateOpen(true)}>
               <Plus size={14} /> New plan
@@ -61,19 +62,19 @@ export default function PlansPage() {
                 {expanded === plan.id ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                 <div>
                   <div style={{ fontWeight: 500 }}>{plan.goal}</div>
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
                     {plan.steps.length} step{plan.steps.length === 1 ? '' : 's'} · {Math.round(plan.progress * 100)}% complete
                   </div>
                 </div>
               </div>
-              <div className="flex-row" onClick={(e) => e.stopPropagation()}>
+              <div className="flex-row gap-sm" onClick={(e) => e.stopPropagation()}>
                 <StatusBadge status={plan.status} />
                 <ConfirmButton onConfirm={() => removeMutation.mutate(plan.id)} />
               </div>
             </div>
 
             {expanded === plan.id && (
-              <div style={{ marginTop: 14, paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ marginTop: 16, paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {plan.steps.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>No steps yet.</p>}
                 {plan.steps.map((step) => (
                   <PlanStepRow key={step.id} step={step} />
@@ -101,12 +102,12 @@ function PlanStepRow({ step }) {
   return (
     <div
       className="flex-row"
-      style={{ justifyContent: 'space-between', padding: '8px 10px', background: 'var(--bg-canvas)', borderRadius: 8 }}
+      style={{ justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg-canvas)', borderRadius: 'var(--radius-md)' }}
     >
       <div>
         <div style={{ fontSize: 13.5 }}>{step.title}</div>
         {step.description && (
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
             {step.description}
           </div>
         )}
@@ -118,9 +119,7 @@ function PlanStepRow({ step }) {
         onChange={(e) => mutation.mutate(e.target.value)}
       >
         {['pending', 'running', 'completed', 'failed'].map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
+          <option key={s} value={s}>{s}</option>
         ))}
       </select>
     </div>

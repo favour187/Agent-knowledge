@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Plus } from 'lucide-react'
+import { Plus, Gauge } from 'lucide-react'
 import { evaluationApi } from '../api/evaluation'
 import { apiErrorMessage } from '../api/client'
-import { LoadingBlock, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
+import { SkeletonTable, EmptyState, ErrorBanner, Modal } from '../components/ui/Primitives'
 
 export default function EvaluationPage() {
   const [runOpen, setRunOpen] = useState(false)
@@ -23,12 +23,13 @@ export default function EvaluationPage() {
       </div>
 
       <ErrorBanner message={error ? apiErrorMessage(error) : null} />
-      {isLoading && <LoadingBlock />}
+      {isLoading && <SkeletonTable rows={4} cols={3} />}
 
       {evals && evals.length === 0 && (
         <EmptyState
           title="No evaluations yet"
           hint="Run an evaluation against a piece of output to score it against a rubric."
+          icon={Gauge}
           action={
             <button className="btn btn-primary btn-sm" onClick={() => setRunOpen(true)}>
               <Plus size={14} /> Run evaluation
@@ -52,7 +53,7 @@ export default function EvaluationPage() {
               </div>
               <p style={{ fontSize: 13.5, marginTop: 10 }}>{ev.output}</p>
               {ev.suggestions?.length > 0 && (
-                <ul style={{ marginTop: 8, paddingLeft: 18, fontSize: 12.5 }} className="text-muted">
+                <ul style={{ marginTop: 10, paddingLeft: 18, fontSize: 12.5 }} className="text-muted">
                   {ev.suggestions.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
