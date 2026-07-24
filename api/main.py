@@ -12,7 +12,8 @@ from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from core import (
@@ -189,9 +190,9 @@ async def health_check() -> dict[str, Any]:
     }
 
 
-@app.get("/")
+@app.get("/api")
 async def root() -> dict[str, str]:
-    """Root endpoint."""
+    """API root endpoint."""
     return {
         "name": settings.app_name,
         "version": settings.api_version,
@@ -215,6 +216,27 @@ app.include_router(audit.router, prefix="/api/audit", tags=["Audit"])
 app.include_router(api_keys.router, prefix="/api/api-keys", tags=["API Keys"])
 app.include_router(training.router, prefix="/api/training", tags=["Training"])
 app.include_router(workspace.router, prefix="/api/workspace", tags=["Workspace"])
+
+
+# ─── Serve frontend static files ─────────────────────────────────────
+FRONTEND_DIST = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist"
+)
+
+if os.path.isdir(FRONTEND_DIST):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+        name="static-assets",
+    )
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve the React SPA — all non-API routes return index.html."""
+        file_path = os.path.join(FRONTEND_DIST, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
 
 
 if __name__ == "__main__":

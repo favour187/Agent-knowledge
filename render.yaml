@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: arena-ai
+    runtime: docker
+    dockerfilePath: ./infrastructure/docker/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: arena-db
+          property: connectionString
+      - key: DEBUG
+        value: "false"
+    healthCheckPath: /health
+
+databases:
+  - name: arena-db
+    plan: free
+    databaseName: arena
