@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+.env
+.env.local
+
+# Large model artifacts — don't commit to git
+models/
+adapters/
+core/training/models/
+checkpoints/
