@@ -5,6 +5,7 @@ import {
   Bot, User, X, Search, Code2, Terminal, Wrench, FileText,
   FolderOpen, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown,
   RotateCcw, Paperclip, Send, PanelRightOpen, Github,
+  Download, ChevronUp, Image,
 } from 'lucide-react'
 import { agentApi } from '../api/agent'
 import { workspaceApi } from '../api/workspace'
@@ -14,25 +15,55 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [streamingContent, setStreamingContent] = useState('')
+  const [streamingActions, setStreamingActions] = useState([])
   const [showWorkspace, setShowWorkspace] = useState(true)
   const [selectedFile, setSelectedFile] = useState(null)
   const [fileContent, setFileContent] = useState('')
   const [filePreviewType, setFilePreviewType] = useState('text')
   const [wsTab, setWsTab] = useState('files')
   const [feedback, setFeedback] = useState({})
+  const [sessionId, setSessionId] = useState(null)
+  const [attachedFiles, setAttachedFiles] = useState([])
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const dropRef = useRef(null)
 
+  // Events
   useEffect(() => {
-    const handler = () => {
-      setMessages([]); setSelectedFile(null); setFileContent(''); setFeedback({})
+    const newChat = () => {
+      setMessages([]); setSelectedFile(null); setFileContent('')
+      setFeedback({}); setSessionId(null); setAttachedFiles([])
     }
-    const wsHandler = () => setShowWorkspace((v) => !v)
-    window.addEventListener('arena-new-chat', handler)
-    window.addEventListener('arena-toggle-ws', wsHandler)
+    const toggleWs = () => setShowWorkspace(v => !v)
+    window.addEventListener('arena-new-chat', newChat)
+    window.addEventListener('arena-toggle-ws', toggleWs)
     return () => {
-      window.removeEventListener('arena-new-chat', handler)
-      window.removeEventListener('arena-toggle-ws', wsHandler)
+      window.removeEventListener('arena-new-chat', newChat)
+      window.removeEventListener('arena-toggle-ws', toggleWs)
+    }
+  }, [])
+
+  // Drag and drop
+  useEffect(() => {
+    const el = dropRef.current
+    if (!el) return
+    const handleDragOver = (e) => { e.preventDefault(); el.style.borderColor = 'var(--accent)' }
+    const handleDragLeave = () => { el.style.borderColor = 'var(--border)' }
+    const handleDrop = (e) => {
+      e.preventDefault()
+      el.style.borderColor = 'var(--border)'
+      const files = Array.from(e.dataTransfer.files)
+      files.forEach(f => handleFileUpload(f))
+    }
+    el.addEventListener('dragover', handleDragOver)
+    el.addEventListener('dragleave', handleDragLeave)
+    el.addEventListener('drop', handleDrop)
+    return () => {
+      el.removeEventListener('dragover', handleDragOver)
+      el.removeEventListener('dragleave', handleDragLeave)
+      el.removeEventListener('drop', handleDrop)
     }
   }, [])
 
@@ -40,29 +71,100 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [])
 
-  useEffect(() => { scrollToBottom() }, [messages, isStreaming, scrollToBottom])
+  useEffect(() => { scrollToBottom() }, [messages, isStreaming, streamingContent, scrollToBottom])
 
-  const chatMutation = useMutation({
-    mutationFn: (msg) => agentApi.chat(msg),
-    onMutate: (msg) => {
-      setIsStreaming(true)
-      setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: msg, timestamp: new Date() }])
-      setInput('')
-    },
-    onSuccess: (data) => {
-      setMessages((prev) => [...prev, {
-        id: Date.now() + 1, role: 'agent', content: data.response,
-        toolCalls: data.tool_calls || [], thinking: data.thinking, timestamp: new Date(),
-      }])
-      setIsStreaming(false)
-      if (data.tool_calls?.length > 0) setShowWorkspace(true)
-    },
-    onError: (e) => { toast.error(apiErrorMessage(e)); setIsStreaming(false) },
-  })
+  // File upload handler
+  async function handleFileUpload(file) {
+    try {
+      const result = await agentApi.upload(file)
+      setAttachedFiles(prev => [...prev, result])
+      toast.success(`Uploaded ${file.name}`)
+      setShowWorkspace(true)
+    } catch (e) {
+      toast.error('Upload failed')
+    }
+  }
 
-  function handleSubmit() {
+  function handleFileInputChange(e) {
+    const files = Array.from(e.target.files || [])
+    files.forEach(f => handleFileUpload(f))
+    e.target.value = ''
+  }
+
+  // Chat submission — uses streaming
+  async function handleSubmit() {
     if (!input.trim() || isStreaming) return
-    chatMutation.mutate(input.trim())
+    const msg = input.trim()
+    setInput('')
+    setIsStreaming(true)
+    setStreamingContent('')
+    setStreamingActions([])
+
+    // Add user message
+    setMessages(prev => [...prev, {
+      id: Date.now(), role: 'user', content: msg,
+      attachments: attachedFiles.length > 0 ? [...attachedFiles] : null,
+      timestamp: new Date(),
+    }])
+    setAttachedFiles([])
+
+    // Add file context to message if files are attached
+    let fullMessage = msg
+    if (attachedFiles.length > 0) {
+      const fileContext = attachedFiles.map(f => `[File: ${f.filename}]\n${f.content_preview || ''}`).join('\n\n')
+      fullMessage = `${msg}\n\n--- Attached files ---\n${fileContext}`
+    }
+
+    try {
+      let finalResponse = ''
+      let toolCalls = []
+      let actions = []
+      let thinking = null
+
+      // Try streaming first
+      try {
+        for await (const data of agentApi.chatStream(fullMessage, sessionId)) {
+          if (data.type === 'thinking') {
+            // Thinking phase
+          } else if (data.type === 'token') {
+            setStreamingContent(prev => prev + data.content)
+            finalResponse += data.content
+          } else if (data.type === 'tool_start') {
+            const action = { tool: data.tool, arguments: data.arguments, status: 'running' }
+            setStreamingActions(prev => [...prev, action])
+            actions.push(action)
+          } else if (data.type === 'tool_result') {
+            setStreamingActions(prev => prev.map(a =>
+              a.tool === data.tool ? { ...a, status: data.success ? 'success' : 'error', result: data.result } : a
+            ))
+            toolCalls.push({ tool: data.tool, result: data.result, success: data.success })
+          } else if (data.type === 'done') {
+            // Stream complete
+          }
+        }
+      } catch {
+        // Fallback to non-streaming
+        const data = await agentApi.chat(fullMessage, sessionId)
+        finalResponse = data.response
+        toolCalls = data.tool_calls || []
+        actions = data.actions || []
+        thinking = data.thinking
+        setStreamingContent(finalResponse)
+      }
+
+      // Add assistant message
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1, role: 'agent', content: finalResponse,
+        toolCalls, actions, thinking, timestamp: new Date(),
+      }])
+      setStreamingContent('')
+      setStreamingActions([])
+
+    } catch (e) {
+      toast.error(apiErrorMessage(e))
+    } finally {
+      setIsStreaming(false)
+    }
   }
 
   function handleKeyDown(e) {
@@ -71,11 +173,11 @@ export default function ChatPage() {
 
   function handleSuggestion(text) {
     setInput(text)
-    setTimeout(() => chatMutation.mutate(text), 50)
+    setTimeout(() => handleSubmit(), 50)
   }
 
   function handleFeedback(msgId, value) {
-    setFeedback((prev) => ({ ...prev, [msgId]: value }))
+    setFeedback(prev => ({ ...prev, [msgId]: value }))
     toast.success(value === 'yes' ? 'Thanks!' : value === 'keep' ? 'Continuing…' : 'Recorded')
   }
 
@@ -85,7 +187,7 @@ export default function ChatPage() {
       setSelectedFile(path)
       setFileContent(data.content)
       setWsTab('preview')
-      setFilePreviewType(path.endsWith('.html') || path.endsWith('.htm') ? 'html' : 'text')
+      setFilePreviewType(path.match(/\.html?$/) ? 'html' : 'text')
     } catch { toast.error('Could not read file') }
   }
 
@@ -94,7 +196,7 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className="chat-area">
+      <div className="chat-area" ref={dropRef}>
         <div className="chat-scroll" ref={scrollRef}>
           <div className="chat-inner">
             {!hasMessages && !isStreaming ? (
@@ -109,12 +211,30 @@ export default function ChatPage() {
                       </div>
                       <div className="msg-body">
                         <div className="msg-role">{msg.role === 'user' ? 'You' : 'Arena'}</div>
-                        {msg.toolCalls?.length > 0 && (
+                        {/* Show attached files */}
+                        {msg.attachments?.length > 0 && (
+                          <div className="tools-row">
+                            {msg.attachments.map((f, i) => (
+                              <span key={i} className="tool-pill">
+                                <FileText size={11} /> {f.filename}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {/* Show agent actions (bash commands, code execution) */}
+                        {msg.actions?.length > 0 && (
+                          <div style={{ marginBottom: 10 }}>
+                            {msg.actions.map((a, i) => (
+                              <AgentAction key={i} action={a} />
+                            ))}
+                          </div>
+                        )}
+                        {/* Show tool call pills */}
+                        {msg.toolCalls?.length > 0 && !msg.actions?.length && (
                           <div className="tools-row">
                             {msg.toolCalls.map((tc, i) => (
                               <span key={i} className="tool-pill">
-                                <ToolIcon name={tc.tool} />
-                                {tc.tool}
+                                <ToolIcon name={tc.tool} /> {tc.tool}
                               </span>
                             ))}
                           </div>
@@ -125,29 +245,39 @@ export default function ChatPage() {
                     {msg.role === 'agent' && msg.id === lastAgentMsg?.id && !feedback[msg.id] && !isStreaming && (
                       <div className="feedback-bar">
                         <span className="feedback-label">Was this task successful?</span>
-                        <button className="feedback-btn yes" onClick={() => handleFeedback(msg.id, 'yes')}>
-                          <ThumbsUp size={13} /> Yes
-                        </button>
-                        <button className="feedback-btn no" onClick={() => handleFeedback(msg.id, 'no')}>
-                          <ThumbsDown size={13} /> No
-                        </button>
-                        <button className="feedback-btn keep" onClick={() => handleFeedback(msg.id, 'keep')}>
-                          <RotateCcw size={13} /> Keep working
-                        </button>
+                        <button className="feedback-btn yes" onClick={() => handleFeedback(msg.id, 'yes')}><ThumbsUp size={13} /> Yes</button>
+                        <button className="feedback-btn no" onClick={() => handleFeedback(msg.id, 'no')}><ThumbsDown size={13} /> No</button>
+                        <button className="feedback-btn keep" onClick={() => handleFeedback(msg.id, 'keep')}><RotateCcw size={13} /> Keep working</button>
                       </div>
                     )}
                   </div>
                 ))}
+
+                {/* Streaming in progress */}
                 {isStreaming && (
                   <div className="msg">
                     <div className="msg-avatar agent"><Bot size={14} /></div>
                     <div className="msg-body">
-                      <div className="thinking">
-                        <div className="thinking-dots">
-                          <div className="thinking-dot" /><div className="thinking-dot" /><div className="thinking-dot" />
+                      <div className="msg-role">Arena</div>
+                      {/* Show streaming actions */}
+                      {streamingActions.length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          {streamingActions.map((a, i) => (
+                            <AgentAction key={i} action={a} />
+                          ))}
                         </div>
-                        Thinking…
-                      </div>
+                      )}
+                      {/* Show streaming text or thinking dots */}
+                      {streamingContent ? (
+                        <div className="msg-text"><RenderContent content={streamingContent} /></div>
+                      ) : (
+                        <div className="thinking">
+                          <div className="thinking-dots">
+                            <div className="thinking-dot" /><div className="thinking-dot" /><div className="thinking-dot" />
+                          </div>
+                          Thinking…
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -156,7 +286,26 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Input bar */}
         <div className="input-area">
+          {/* Attached files preview */}
+          {attachedFiles.length > 0 && (
+            <div style={{ maxWidth: 768, margin: '0 auto 8px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {attachedFiles.map((f, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)', borderRadius: 6, fontSize: 11,
+                }}>
+                  <FileText size={12} /> {f.filename}
+                  <button onClick={() => setAttachedFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <form className="input-wrapper" onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
             <div className="input-top">
               <textarea
@@ -170,7 +319,9 @@ export default function ChatPage() {
                 rows={1}
                 onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px' }}
               />
-              <button type="button" className="input-action" style={{ padding: 6 }}>
+              <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileInputChange}
+                accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md,.csv,.html,.css,.js,.json,.xml,.py,.ts,.sh,.yaml,.sql" />
+              <button type="button" className="input-action" style={{ padding: 6 }} onClick={() => fileInputRef.current?.click()}>
                 <Paperclip size={16} />
               </button>
               <button type="submit" className="input-send" disabled={!input.trim() || isStreaming}>
@@ -178,6 +329,9 @@ export default function ChatPage() {
               </button>
             </div>
             <div className="input-bottom">
+              <button type="button" className="input-action" onClick={() => fileInputRef.current?.click()}>
+                <Paperclip size={13} /> Add files
+              </button>
               <button type="button" className="input-action" onClick={() => setShowWorkspace(!showWorkspace)}>
                 <PanelRightOpen size={13} /> Files
               </button>
@@ -189,15 +343,17 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Workspace panel — always rendered, hidden via CSS on mobile if needed */}
+      {/* Workspace panel */}
       {showWorkspace && (
         <div className="workspace">
           <div className="ws-header">
             <span className="ws-title">Workspace</span>
-            <button className="ws-close" onClick={() => setShowWorkspace(false)}><X size={16} /></button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="ws-close" onClick={() => setShowWorkspace(false)}><X size={16} /></button>
+            </div>
           </div>
           <div className="ws-tabs">
-            {['files', 'preview'].map((t) => (
+            {['files', 'preview'].map(t => (
               <button key={t} className={`ws-tab${wsTab === t ? ' active' : ''}`} onClick={() => setWsTab(t)}>{t}</button>
             ))}
           </div>
@@ -206,7 +362,9 @@ export default function ChatPage() {
             {wsTab === 'preview' && (
               selectedFile ? (
                 <div className="ws-preview">
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>{selectedFile}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{selectedFile}</span>
+                  </div>
                   {filePreviewType === 'html' ? (
                     <iframe className="ws-preview-iframe" srcDoc={fileContent} title="Preview" sandbox="allow-scripts" />
                   ) : (
@@ -226,6 +384,57 @@ export default function ChatPage() {
   )
 }
 
+/* ── Agent Action Display (bash, code, etc.) ─────────────────── */
+
+function AgentAction({ action }) {
+  const [expanded, setExpanded] = useState(false)
+  const Icon = action.tool === 'shell' || action.tool === 'bash' ? Terminal
+    : action.tool === 'execute_code' ? Code2
+    : action.tool === 'web_search' ? Search
+    : Wrench
+
+  const statusColor = action.status === 'success' ? 'var(--green)'
+    : action.status === 'error' ? 'var(--red)'
+    : 'var(--yellow)'
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface)', border: '1px solid var(--border)',
+      borderRadius: 8, marginBottom: 6, overflow: 'hidden',
+    }}>
+      <div onClick={() => setExpanded(!expanded)} style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+        cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)',
+      }}>
+        <Icon size={13} style={{ color: 'var(--purple)' }} />
+        <span style={{ flex: 1, fontFamily: 'var(--font-mono)', textTransform: 'lowercase' }}>
+          {action.display || action.tool}
+        </span>
+        {action.status === 'running' ? (
+          <div className="thinking-dots" style={{ gap: 2 }}>
+            <div className="thinking-dot" style={{ width: 4, height: 4 }} />
+            <div className="thinking-dot" style={{ width: 4, height: 4 }} />
+            <div className="thinking-dot" style={{ width: 4, height: 4 }} />
+          </div>
+        ) : (
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
+        )}
+        {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </div>
+      {expanded && action.result && (
+        <pre style={{
+          margin: 0, padding: '8px 12px', borderTop: '1px solid var(--border)',
+          fontSize: 11, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all', color: 'var(--text-secondary)', maxHeight: 200,
+          overflow: 'auto', lineHeight: 1.5,
+        }}>
+          {typeof action.result === 'string' ? action.result : JSON.stringify(action.result, null, 2)}
+        </pre>
+      )}
+    </div>
+  )
+}
+
 /* ── Files Panel ─────────────────────────────────────────────── */
 
 function FilesPanel({ onSelect, selected }) {
@@ -238,7 +447,7 @@ function FilesPanel({ onSelect, selected }) {
       Files created by the agent will appear here
     </div>
   )
-  return <>{tree.map((n) => <TreeNode key={n.path} node={n} depth={0} onSelect={onSelect} selected={selected} />)}</>
+  return <>{tree.map(n => <TreeNode key={n.path} node={n} depth={0} onSelect={onSelect} selected={selected} />)}</>
 }
 
 function TreeNode({ node, depth, onSelect, selected }) {
@@ -254,7 +463,7 @@ function TreeNode({ node, depth, onSelect, selected }) {
         <FolderOpen size={13} style={{ color: 'var(--yellow)', opacity: 0.7 }} />
         <span className="ws-file-name">{node.name}</span>
       </div>
-      {expanded && node.children?.map((c) => <TreeNode key={c.path} node={c} depth={depth + 1} onSelect={onSelect} selected={selected} />)}
+      {expanded && node.children?.map(c => <TreeNode key={c.path} node={c} depth={depth + 1} onSelect={onSelect} selected={selected} />)}
     </div>
   )
 
@@ -299,7 +508,7 @@ function WelcomeScreen({ onSuggestion, onToggleWs }) {
         Arena can build apps, write code, research topics, and complete tasks autonomously.
       </p>
       <div className="welcome-grid">
-        {suggestions.map((s) => (
+        {suggestions.map(s => (
           <div key={s.title} className="welcome-card" onClick={() => onSuggestion(s.title)}>
             <div className="welcome-card-title">{s.title}</div>
             {s.desc}
